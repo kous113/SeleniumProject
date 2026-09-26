@@ -1,0 +1,370 @@
+# PART 3: PAGE OBJECT MODEL (POM)
+
+---
+
+## 1. WHY TO HAVE A FRAMEWORK
+
+In test automation, writing monolithic scripts where locators, test steps, test data, and driver initialization are combined in a single file can create several challenges.
+
+### Disadvantages of Unstructured Automation Scripts
+
+1. **High Code Duplication:**
+   Locators and user interaction steps are repeatedly written across multiple test scripts.
+
+2. **High Maintenance Effort:**
+   If a UI locator or element property changes, every script using that locator may need to be updated.
+
+3. **Hardcoded Test Data:**
+   Hardcoded credentials and URLs make test scripts less flexible, reusable, and maintainable.
+
+4. **Poor Readability and Scalability:**
+   Large, unstructured scripts are difficult to understand and become harder to manage as the automation project grows.
+
+### Benefits of a Test Automation Framework
+
+1. **Reusability:**
+   Common wrapper methods, page objects, and utility functions can be created once and reused across multiple tests.
+
+2. **Maintainability:**
+   UI element locators are maintained inside dedicated Page classes. When the UI changes, the required updates can generally be made in one place.
+
+3. **Separation of Concerns:**
+   Test logic is separated from UI locator handling and test data management.
+
+4. **Parallel Execution and Reporting:**
+   A framework can support test runners, logging, HTML reports, and CI/CD integration.
+
+---
+
+## 2. UNDERSTANDING BASE CLASS, PAGE CLASS, TEST CLASS, UTILITY CLASSES, CONFIGURATION FILE, AND SCREENSHOTS
+
+A standard Page Object Model architecture consists of several important components.
+
+### 1. Base Class (`BasePage`)
+
+* Contains wrapper methods around native Selenium WebDriver operations, such as custom click, type/send_keys, waiting for element visibility, scrolling, and retrieving text.
+* Keeps WebDriver-related operations organized.
+* Ensures that explicit wait mechanisms are applied consistently across page interactions.
+
+### 2. Page Class
+
+* Represents a specific web page or component, such as `LoginPage` or `DashboardPage`.
+* Encapsulates:
+
+  * **Locators:** `By.ID`, `By.XPATH`, etc., for elements available on the page.
+  * **Action Methods:** Methods representing user operations, such as `enter_username()` and `click_login_button()`.
+
+### 3. Test Class (`test_*.py`)
+
+* Contains the actual test cases and assertion statements.
+* Creates instances of Page classes, calls page action methods, and verifies expected results.
+* Should not contain direct `driver.find_element` calls or raw XPath references.
+
+### 4. Utility Classes (`utils/`)
+
+Utility classes provide helper functionality for supporting tasks, such as:
+
+* Data readers for CSV, Excel, JSON, and YAML files.
+* Logger configuration using Python's `logging` module.
+* Database or API helper functions.
+
+### 5. Configuration File (`config.ini` / `config.properties` / `.env`)
+
+* Provides a central location for environment-related settings.
+* Can contain:
+
+  * Base URL
+  * Browser selection
+  * Default timeouts
+  * User credentials
+  * Other environment variables
+
+### 6. Screenshots Directory (`screenshots/`)
+
+* Stores screenshots captured during test execution.
+* Screenshots can be automatically taken when a test fails.
+* These images provide a visual representation of the web page at the time of failure.
+
+---
+
+## 3. WHAT IS PAGE OBJECT MODEL (POM)
+
+**Page Object Model (POM)** is an industry-standard design pattern used in test automation to create an organized object repository for web UI elements.
+
+Under POM:
+
+* Each web page in the application under test is represented by a corresponding Page Class.
+* Web elements on the page are defined as variables or locators within that class.
+* Operations performed on the web page are implemented as methods within the class.
+
+### Key Principle of POM
+
+Test scripts should not directly interact with the DOM or WebDriver locators. Instead, they delegate element interactions to Page Objects.
+
+### Architectural Overview
+
+```text
+  +-----------------------+           +-----------------------+
+  |    Test Script        |           |      Page Class       |
+  |  (test_login.py)      | --------> |     (LoginPage.py)    |
+  |  - Calls page methods |           |  - Holds Locators     |
+  |  - Asserts outcomes   |           |  - Defines Actions    |
+  +-----------------------+           +-----------------------+
+                                                  |
+                                                  v
+                                      +-----------------------+
+                                      |      Base Class       |
+                                      |     (BasePage.py)     |
+                                      |  - Custom WebWaits    |
+                                      |  - Driver Wrappers    |
+                                      +-----------------------+
+```
+
+---
+
+## 4. BASEPAGE AND UTIL CONCEPT
+
+### BasePage Concept
+
+The `BasePage` acts as the parent class for all Page Classes.
+
+It accepts the `driver` instance through its `__init__` constructor and provides reusable element interaction methods using explicit waits through `WebDriverWait`.
+
+### Example `BasePage.py`
+
+```python
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+class BasePage:
+    def __init__(self, driver, timeout=10):
+        self.driver = driver
+        self.wait = WebDriverWait(driver, timeout)
+
+    def do_click(self, locator):
+        """Wait for element to be clickable, then click."""
+        element = self.wait.until(EC.element_to_be_clickable(locator))
+        element.click()
+
+    def do_send_keys(self, locator, text):
+        """Wait for element visibility, clear field, and enter text."""
+        element = self.wait.until(EC.visibility_of_element_located(locator))
+        element.clear()
+        element.send_keys(text)
+
+    def get_element_text(self, locator):
+        """Wait for element visibility and return text."""
+        element = self.wait.until(EC.visibility_of_element_located(locator))
+        return element.text
+
+    def is_visible(self, locator):
+        """Check if element is visible on page."""
+        element = self.wait.until(EC.visibility_of_element_located(locator))
+        return bool(element)
+```
+
+---
+
+## 5. INHERITING BASEPAGE CLASS
+
+Every Page Object Class inherits from `BasePage` so that it can use the reusable web interaction methods such as `do_click()` and `do_send_keys()`.
+
+### Example Page Class Inheriting `BasePage`
+
+```python
+from selenium.webdriver.common.by import By
+
+# Assuming BasePage is imported from base_pages.BasePage
+from base_pages.BasePage import BasePage
+
+class LoginPage(BasePage):
+    # Locators Encapsulation
+    USERNAME_INPUT = (By.ID, "Email")
+    PASSWORD_INPUT = (By.ID, "Password")
+    LOGIN_BUTTON   = (By.XPATH, "//button[@type='submit']")
+    ERROR_MSG      = (By.CLASS_NAME, "message-error")
+
+    def __init__(self, driver):
+        # Call parent constructor
+        super().__init__(driver)
+
+    # Action Methods
+    def enter_username(self, username):
+        self.do_send_keys(self.USERNAME_INPUT, username)
+
+    def enter_password(self, password):
+        self.do_send_keys(self.PASSWORD_INPUT, password)
+
+    def click_login(self):
+        self.do_click(self.LOGIN_BUTTON)
+
+    def login_to_application(self, username, password):
+        self.enter_username(username)
+        self.enter_password(password)
+        self.click_login()
+
+    def get_error_message(self):
+        return self.get_element_text(self.ERROR_MSG)
+```
+
+---
+
+## 6. UTILITY TO READ CSV DATA
+
+Reading test data from external CSV files supports **Data-Driven Testing (DDT)**.
+
+### Example CSV Data Reader Utility (`excel_util.py` or `csv_reader.py`)
+
+```python
+import csv
+
+def read_csv_data(file_path):
+    """Reads CSV file and returns list of data rows (excluding header)."""
+    data_list = []
+
+    with open(file_path, mode='r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip header row
+
+        for row in reader:
+            data_list.append(row)
+
+    return data_list
+```
+
+### Integrating CSV Utility with PyTest Parameterization
+
+```python
+import pytest
+from utilities.csv_reader import read_csv_data
+
+# Read test data from CSV file
+test_data = read_csv_data("test_data/login_credentials.csv")
+
+@pytest.mark.parametrize("username, password, expected_status", test_data)
+def test_login_from_csv(driver, username, password, expected_status):
+    login_page = LoginPage(driver)
+    login_page.login_to_application(username, password)
+
+    # Perform assertions based on expected_status
+```
+
+---
+
+## 7. CONVERT TEST CASE TO PAGE OBJECT MODEL FRAMEWORK
+
+The following example shows the difference between a non-POM script and a refactored POM-based script.
+
+### BEFORE — Monolithic Unstructured Script
+
+```python
+def test_admin_login():
+    driver = webdriver.Chrome()
+    driver.get("https://admin-demo.nopcommerce.com/login")
+    
+    email_field = driver.find_element(By.ID, "Email")
+    email_field.clear()
+    email_field.send_keys("admin@yourstore.com")
+    
+    pass_field = driver.find_element(By.ID, "Password")
+    pass_field.clear()
+    pass_field.send_keys("admin")
+    
+    login_btn = driver.find_element(By.XPATH, "//button[@type='submit']")
+    login_btn.click()
+    
+    assert driver.title == "Dashboard / nopCommerce administration"
+    driver.quit()
+```
+
+### AFTER — Clean POM Architecture
+
+#### 1. `base_pages/LoginPage.py`
+
+```python
+from base_pages.BasePage import BasePage
+from selenium.webdriver.common.by import By
+
+class LoginPage(BasePage):
+    EMAIL_INPUT = (By.ID, "Email")
+    PASSWORD_INPUT = (By.ID, "Password")
+    LOGIN_BTN = (By.XPATH, "//button[@type='submit']")
+
+    def __init__(self, driver):
+        super().__init__(driver)
+
+    def login(self, email, password):
+        self.do_send_keys(self.EMAIL_INPUT, email)
+        self.do_send_keys(self.PASSWORD_INPUT, password)
+        self.do_click(self.LOGIN_BTN)
+```
+
+#### 2. `test_cases/test_admin_login.py`
+
+```python
+from base_pages.LoginPage import LoginPage
+
+def test_admin_login(driver):
+    driver.get("https://admin-demo.nopcommerce.com/login")
+
+    login_page = LoginPage(driver)
+    login_page.login("admin@yourstore.com", "admin")
+
+    assert driver.title == "Dashboard / nopCommerce administration"
+```
+
+---
+
+## 8. TAKING SCREENSHOTS ON TEST FAILURE
+
+Automatically capturing screenshots when a test fails is useful for diagnosing failures during automated test execution.
+
+### Method 1: Manual Driver Screenshot Capture
+
+```python
+driver.save_screenshot("screenshots/failure_screenshot.png")
+
+# or
+
+driver.get_screenshot_as_file("screenshots/test_failure.png")
+```
+
+### Method 2: Automatic PyTest Failure Hook in `conftest.py`
+
+The `pytest_runtest_makereport` hook can be implemented in `conftest.py` to automatically capture a screenshot whenever a test fails.
+
+The screenshot can be saved with a timestamp and can also be attached to PyTest-HTML reports.
+
+### Example `conftest.py` Hook
+
+```python
+import pytest
+import os
+from datetime import datetime
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+    
+    if report.when == 'call' and report.failed:
+        driver = item.funcargs.get('driver')
+
+        if driver:
+            screenshots_dir = "screenshots"
+            os.makedirs(screenshots_dir, exist_ok=True)
+
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = f"{screenshots_dir}/{item.name}_{timestamp}.png"
+
+            driver.save_screenshot(file_name)
+
+            print(f"\n[SCREENSHOT CAPTURED] Saved to {file_name}")
+```
+
+### Benefits
+
+* Runs automatically without requiring manual screenshot logic in every test case.
+* Captures the exact visual state of the browser when the test fails.
+* Makes it easier to investigate and diagnose test failures.
+* Provides useful evidence for debugging automated test execution.

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.5 (Python 3.14.7 on win32)" generated="2026-09-21T02:06:34.752597" rpa="false" schemaversion="5">
+<suite id="s1" name="Intro Test &amp; Readable Test">
+<suite id="s1-s1" name="Intro Test" source="D:\projects\selenium_assignment\Selenium\Folder 1 - Initial Lab Work and Video Demonstrations\week4\Introduction\intro_test.robot">
+<test id="s1-s1-t1" name="Verify Example Domain Homepage Title" line="10">
+<kw name="Open Browser To Page">
+<kw name="Open Browser" owner="SeleniumLibrary">
+<msg time="2026-09-21T02:06:35.090522" level="INFO">Opening browser 'headlesschrome' to base url 'https://example.com'.</msg>
+<arg>${URL}</arg>
+<arg>${BROWSER}</arg>
+<doc>Opens a new browser instance to the optional ``url``.</doc>
+<status status="PASS" start="2026-09-21T02:06:35.090320" elapsed="1.790288"/>
+</kw>
+<kw name="Maximize Browser Window" owner="SeleniumLibrary">
+<doc>Maximizes current browser window.</doc>
+<status status="PASS" start="2026-09-21T02:06:36.880833" elapsed="0.034593"/>
+</kw>
+<kw name="Set Selenium Implicit Wait" owner="SeleniumLibrary">
+<arg>5s</arg>
+<doc>Sets the implicit wait value used by Selenium.</doc>
+<status status="PASS" start="2026-09-21T02:06:36.915609" elapsed="0.000949"/>
+</kw>
+<status status="PASS" start="2026-09-21T02:06:35.089686" elapsed="1.827028"/>
+</kw>
+<kw name="Verify Page Title">
+<kw name="Title Should Be" owner="SeleniumLibrary">
+<msg time="2026-09-21T02:06:36.920108" level="INFO">Page title is 'Example Domain'.</msg>
+<arg>Example Domain</arg>
+<doc>Verifies that the current page title equals ``title``.</doc>
+<status status="PASS" start="2026-09-21T02:06:36.917075" elapsed="0.003098"/>
+</kw>
+<kw name="Page Should Contain" owner="SeleniumLibrary">
+<msg time="2026-09-21T02:06:36.927502" level="INFO">Current page contains text 'Example Domain'.</msg>
+<arg>Example Domain</arg>
+<doc>Verifies that current page contains ``text``.</doc>
+<status status="PASS" start="2026-09-21T02:06:36.920277" elapsed="0.007286"/>
+</kw>
+<status status="PASS" start="2026-09-21T02:06:36.916872" elapsed="0.010756"/>
+</kw>
+<kw name="Close Browser Session">
+<kw name="Close Browser" owner="SeleniumLibrary">
+<doc>Closes the current browser.</doc>
+<status status="PASS" start="2026-09-21T02:06:36.927995" elapsed="2.101694"/>
+</kw>
+<status status="PASS" start="2026-09-21T02:06:36.927765" elapsed="2.102145"/>
+</kw>
+<doc>Verifies page title and heading on Example Domain website.</doc>
+<tag>smoke</tag>
+<status status="PASS" start="2026-09-21T02:06:35.089119" elapsed="3.940998"/>
+</test>
+<doc>Simple Robot Framework Test Suite Demonstrating Setup, Keywords, and Data-Driven Tests.</doc>
+<status status="PASS" start="2026-09-21T02:06:34.803118" elapsed="4.227623"/>
+</suite>
+<suite id="s1-s2" name="Readable Test" source="D:\projects\selenium_assignment\Selenium\Folder 1 - Initial Lab Work and Video Demonstrations\week4\Make the Script More Readable\readable_test.robot">
+<test id="s1-s2-t1" name="Verify Example Domain Portal Gherkin Style" line="8">
+<kw name="Log To Console" owner="BuiltIn" type="SETUP">
+<arg>[SETUP] Starting Readable Test Case Execution...</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2026-09-21T02:06:39.037276" elapsed="0.000216"/>
+</kw>
+<kw name="Given user opens the home page">
+<kw name="Navigate To Home Page" owner="common">
+<kw name="Open Browser" owner="SeleniumLibrary">
+<msg time="2026-09-21T02:06:39.038147" level="INFO">Opening browser 'headlesschrome' to base url 'https://example.com'.</msg>
+<arg>${BASE_URL}</arg>
+<arg>${BROWSER}</arg>
+<doc>Opens a new browser instance to the optional ``url``.</doc>
+<status status="PASS" start="2026-09-21T02:06:39.038027" elapsed="0.621623"/>
+</kw>
+<kw name="Maximize Browser Window" owner="SeleniumLibrary">
+<doc>Maximizes current browser window.</doc>
+<status status="PASS" start="2026-09-21T02:06:39.659805" elapsed="0.019551"/>
+</kw>
+<kw name="Set Selenium Implicit Wait" owner="SeleniumLibrary">
+<arg>5s</arg>
+<doc>Sets the implicit wait value used by Selenium.</doc>
+<status status="PASS" start="2026-09-21T02:06:39.679600" elapsed="0.000957"/>
+</kw>
+<status status="PASS" start="2026-09-21T02:06:39.037804" elapsed="0.642834"/>
+</kw>
+<status status="PASS" start="2026-09-21T02:06:39.037631" elapsed="0.643049"/>
+</kw>
+<kw name="Then page heading should display &quot;Example Domain&quot;" source_name="Page heading should display &quot;${heading}&quot;">
+<kw name="Verify Main Heading" owner="common">
+<kw name="Page Should Contain" owner="SeleniumLibrary">
+<msg time="2026-09-21T02:06:39.688545" level="INFO">Current page contains text 'Example Domain'.</msg>
+<arg>${expected_heading}</arg>
+<doc>Verifies that current page contains ``text``.</doc>
+<status status="PASS" start="2026-09-21T02:06:39.681250" elapsed="0.007369"/>
+</kw>
+<arg>${heading}</arg>
+<status status="PASS" start="2026-09-21T02:06:39.681070" elapsed="0.007621"/>
+</kw>
+<status status="PASS" start="2026-09-21T02:06:39.680839" elapsed="0.007892"/>
+</kw>
+<kw name="Close Application Session" owner="common" type="TEARDOWN">
+<kw name="Close All Browsers" owner="SeleniumLibrary">
+<doc>Closes all open browsers and resets the browser cache.</doc>
+<status status="PASS" start="2026-09-21T02:06:39.689122" elapsed="2.089880"/>
+</kw>
+<status status="PASS" start="2026-09-21T02:06:39.688924" elapsed="2.090207"/>
+</kw>
+<doc>Verifies main heading on Example Domain using Gherkin syntax.</doc>
+<tag>gherkin</tag>
+<tag>readable</tag>
+<status status="PASS" start="2026-09-21T02:06:39.036934" elapsed="2.742251"/>
+</test>
+<doc>Demonstrates Readable Gherkin-style Test Suite with User-Defined Keywords &amp; Resources.</doc>
+<status status="PASS" start="2026-09-21T02:06:39.031431" elapsed="2.748159"/>
+</suite>
+<status status="PASS" start="2026-09-21T02:06:34.754352" elapsed="7.025762"/>
+</suite>
+<statistics>
+<total>
+<stat pass="2" fail="0" skip="0">All Tests</stat>
+</total>
+<tag>
+<stat pass="1" fail="0" skip="0">gherkin</stat>
+<stat pass="1" fail="0" skip="0">readable</stat>
+<stat pass="1" fail="0" skip="0">smoke</stat>
+</tag>
+<suite>
+<stat name="Intro Test &amp; Readable Test" id="s1" pass="2" fail="0" skip="0">Intro Test &amp; Readable Test</stat>
+<stat name="Intro Test" id="s1-s1" pass="1" fail="0" skip="0">Intro Test &amp; Readable Test.Intro Test</stat>
+<stat name="Readable Test" id="s1-s2" pass="1" fail="0" skip="0">Intro Test &amp; Readable Test.Readable Test</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>

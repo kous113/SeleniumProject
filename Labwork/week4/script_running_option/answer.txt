@@ -1,0 +1,256 @@
+PART 2: SCRIPT RUNNING OPTIONS
+
+============================================================
+
+1. ROBOT VS. PYBOT
+   ============================================================
+
+A. Historical Overview
+
+* `pybot`: An older command-line script that was used with earlier versions of Robot Framework, particularly for executing tests in a Python 2 environment.
+* `jybot`: A command used to execute Robot Framework tests using Jython on the Java Virtual Machine.
+* `ipybot`: A command used to run Robot Framework tests using IronPython on the .NET platform.
+
+B. Modern Standardization Using the `robot` Command
+
+* From Robot Framework 3.1 onward, the older `pybot`, `jybot`, and `ipybot` commands were deprecated.
+* These legacy commands were completely removed in Robot Framework 4.0 and later.
+* Modern Robot Framework versions use the single `robot` command as the standard way to execute test cases.
+
+Comparison:
+
+## Feature              Legacy `pybot` Command          Modern `robot` Command
+
+Status               Deprecated / Removed            Official Standard
+Python Version       Python 2.x                      Python 3.x
+Execution Command    `pybot test.robot`              `robot test.robot`
+Entry Point          Wrapper script                  `python -m robot`
+
+============================================================
+2. RUNNING FROM PYCHARM, COMMAND WINDOW, BATCH FILE, AND TASK SCHEDULER
+=======================================================================
+
+A. Running Robot Framework from PyCharm
+
+Robot Framework tests can be executed from PyCharm by installing an appropriate Robot Framework plugin and configuring an external tool.
+
+Steps:
+
+1. Install a Robot Framework plugin such as Robot Framework Language Server or Hyper RobotFramework Support.
+
+2. Configure an External Tool in PyCharm with the following settings:
+
+   Name: `Robot Run`
+
+   Program: `C:\Python311\Scripts\robot.exe`
+
+   Arguments: `-d results $FilePath$`
+
+   Working Directory: `$ProjectFileDir$`
+
+3. Right-click a `.robot` file and select:
+
+   External Tools → Robot Run
+
+B. Running from Command Window / Terminal
+
+A single test suite can be executed using:
+
+robot -d results tests/login_tests.robot
+
+An entire folder containing multiple test suites can be executed using:
+
+robot -d results tests/
+
+C. Running Using a Windows Batch File
+
+A batch file can be used to automate the execution of Robot Framework tests.
+
+Example file: `run_tests.bat`
+
+@echo off
+echo Starting Robot Framework Test Execution...
+cd /d "D:\projects\selenium_assignment\Selenium"
+call .venv\Scripts\activate.bat
+robot -d results --loglevel INFO "Folder 1 - Initial Lab Work and Video Demonstrations\week4\Introduction\intro_test.robot"
+echo Execution Complete! HTML report generated in results/ directory.
+pause
+
+The batch file activates the virtual environment, executes the selected Robot Framework test, and stores the generated reports in the results directory.
+
+D. Running Tests Through Windows Task Scheduler
+
+Windows Task Scheduler can be used to execute Robot Framework tests automatically at a specified time without manual intervention.
+
+Steps:
+
+1. Open Windows Task Scheduler by running `taskschd.msc`.
+2. Select Action → Create Basic Task.
+3. Give the task a name such as `Nightly Robot Test Suite`.
+4. Under Trigger, select Daily and set the required execution time, for example, 02:00 AM.
+5. Under Action, select Start a Program.
+6. Configure the program as follows:
+
+   Program/script: `cmd.exe`
+
+   Add arguments: `/c "D:\projects\selenium_assignment\run_tests.bat"`
+
+   Start in: `D:\projects\selenium_assignment\`
+
+This allows the Robot Framework test suite to run automatically according to the configured schedule.
+
+============================================================
+3. RUNNING TESTS ON SAUCELABS BROWSERS
+======================================
+
+Sauce Labs is a cloud-based testing platform that allows automated tests to run across a large number of browser, operating system, and device combinations.
+
+A. Configuring Sauce Labs Remote Execution in Robot Framework
+
+To execute Selenium tests on the Sauce Labs cloud grid, the Sauce Labs remote URL and required browser capabilities must be provided.
+
+Important capabilities can include:
+
+* `browserName`
+* `platformName`
+* `browserVersion`
+
+Example:
+
+*** Settings ***
+Library    SeleniumLibrary
+
+*** Variables ***
+${SAUCE_USERNAME}      your_saucelabs_username
+${SAUCE_ACCESS_KEY}    your_saucelabs_access_key
+${REMOTE_URL}          https://${SAUCE_USERNAME}:${SAUCE_ACCESS_KEY}@ondemand.us-west-1.saucelabs.com:443/wd/hub
+
+*** Test Cases ***
+SauceLabs Cloud Test
+${desired_capabilities}=    Create Dictionary
+...    browserName=Chrome
+...    platformName=Windows 11
+...    browserVersion=latest
+...    sauce:options=${DESIRED_CAPS_SAUCE}
+
+```
+Open Browser    https://example.com    remote_url=${REMOTE_URL}    desired_capabilities=${desired_capabilities}
+Page Should Contain    Example Domain
+Close Browser
+```
+
+This configuration allows the Robot Framework test to connect to a remote Sauce Labs browser instead of using a browser installed locally.
+
+============================================================
+4. RUNNING AND SCHEDULING TESTS FROM JENKINS
+============================================
+
+Jenkins is a widely used automation server that supports Continuous Integration and Continuous Delivery (CI/CD) workflows.
+
+A. Configuring a Robot Framework Job in Jenkins
+
+1. Install the Robot Framework Plugin through:
+
+   Manage Jenkins → Plugins
+
+2. Select Create New Item and choose Freestyle project.
+
+3. Name the project:
+
+   `Robot_Automation_CI`
+
+4. Under Build Steps, add Execute Windows batch command and use:
+
+python -m robot --outputdir %WORKSPACE%\reports tests/
+
+5. Under Post-build Actions, add Publish Robot Framework test results.
+
+6. Configure the result directory as:
+
+   `reports`
+
+7. Configure the thresholds as:
+
+   Pass threshold: `90%`
+
+   Unstable threshold: `80%`
+
+B. Scheduling Jenkins Builds
+
+Jenkins provides cron-style scheduling through the Build periodically option.
+
+For example:
+
+`H 2 * * *`
+
+Runs the build once every day around 2:00 AM.
+
+`H/15 * * * *`
+
+Runs the build approximately every 15 minutes.
+
+Using Jenkins scheduling allows automated Robot Framework tests to execute regularly without manually starting each build.
+
+============================================================
+5. RUNNING SINGLE TEST CASES, MULTIPLE SUITES, AND ADVANCED OPTIONS
+===================================================================
+
+A. Running a Single Test Case
+
+The `-t` or `--test` option can be used to execute a specific test case from a suite.
+
+Example:
+
+robot -t "Valid Login Test" login_tests.robot
+
+B. Running Multiple Test Suites
+
+Multiple suite files can be provided in a single Robot Framework command.
+
+Example:
+
+robot tests/suite1.robot tests/suite2.robot
+
+C. Filtering Tests Using Tags
+
+Robot Framework allows tests to be selected or excluded based on their tags.
+
+Include tests with a specific tag using `-i` or `--include`:
+
+robot -i smoke tests/
+
+Exclude tests with a specific tag using `-e` or `--exclude`:
+
+robot -e slow tests/
+
+Multiple tag conditions can also be combined:
+
+robot -i "smoke AND web" tests/
+
+D. Re-running Failed Tests Using `--rerunfailed`
+
+Robot Framework can execute only the tests that failed during a previous execution.
+
+Step 1: Run the complete test suite:
+
+robot -d results/first_run tests/
+
+Step 2: Execute only the tests that failed in the previous run:
+
+robot --rerunfailed results/first_run/output.xml -d results/second_run tests/
+
+Step 3: Combine the results using `rebot`:
+
+rebot --merge results/first_run/output.xml results/second_run/output.xml
+
+This approach is useful when only a small number of tests fail and there is no need to execute the entire test suite again.
+
+E. Overriding Variables from the Command Line
+
+The `-v` or `--variable` option allows variables to be supplied or changed directly from the command line.
+
+Example:
+
+robot -v BROWSER:firefox -v URL:https://staging.example.com tests/
+
+In this example, the browser is set to Firefox and the URL is set to the staging environment for that particular execution.

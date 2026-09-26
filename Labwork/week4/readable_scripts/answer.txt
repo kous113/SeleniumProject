@@ -1,0 +1,283 @@
+Absolutely. I’ll keep the **same content and examples**, but rephrase the explanations and remove all code-fence markers so you can copy everything directly without the ``` formatting causing problems.
+
+PART 3: MAKE THE SCRIPT MORE READABLE
+
+============================================================
+
+1. PROCEDURAL VS. GHERKIN
+   ============================================================
+
+Robot Framework allows test cases to be written in two main styles: Procedural style and Gherkin BDD style.
+
+A. Procedural Style (Action-Oriented / Sequential Commands)
+
+The procedural approach describes the exact actions that should be performed one after another. It is commonly used when creating technical automation scripts.
+
+*** Test Cases ***
+Login Test Procedural
+Open Browser    [https://example.com/login](https://example.com/login)    chrome
+Input Text      id=username    admin
+Input Password  id=password    secret
+Click Button    id=submit
+Page Should Contain    Dashboard
+Close Browser
+
+B. Gherkin BDD Style (Behavior-Oriented / Business Language)
+
+The Gherkin approach describes the expected behavior of the application using language that is easier for technical and non-technical users to understand.
+
+It commonly uses prefixes such as Given, When, Then, And, and But. Robot Framework removes these prefixes when searching for the corresponding keyword.
+
+*** Test Cases ***
+Login Test Gherkin
+Given user navigates to login page
+When user inputs credentials "admin" and "secret"
+And user clicks submit button
+Then dashboard page should be displayed
+
+Comparison:
+
+## Feature              Procedural Style                  Gherkin BDD Style
+
+Target Audience      Automation Engineers              Business Analysts,
+QA Engineers,
+Product Teams
+
+Readability          Focuses on actions and            Focuses on intent
+web elements                      and behavior
+
+Keyword Prefix       No specific prefix                 Given, When, Then,
+And, But
+
+Maintenance          Can involve more duplication       Easier to maintain
+when locators change              when keywords are
+properly abstracted
+
+============================================================
+2. INTRODUCING USER-DEFINED KEYWORDS
+====================================
+
+User-defined keywords allow testers to create their own reusable keywords by combining existing Robot Framework or library keywords.
+
+These custom keywords are generally created under the *** Keywords *** section. They help hide low-level implementation details and make test cases easier to understand.
+
+Arguments and Return Values:
+
+* Arguments are defined using the [Arguments] setting.
+* Values can be returned using the [Return] setting or the RETURN statement.
+
+Example:
+
+*** Keywords ***
+Calculate Total Price
+[Arguments]    ${price}    ${quantity}
+${total}=    Evaluate    ${price} * ${quantity}
+RETURN    ${total}
+
+============================================================
+3. BREAKING THE SCRIPT INTO KEYWORDS
+====================================
+
+A large test case can become difficult to understand and maintain when every action is written directly inside the test case.
+
+Breaking the test into smaller, reusable keywords makes the automation code more organized, readable, and easier to maintain.
+
+Before Refactoring (Monolithic):
+
+*** Test Cases ***
+Search Test
+Open Browser    [https://google.com](https://google.com)    chrome
+Input Text    name=q    Robot Framework
+Click Element    name=btnK
+Page Should Contain    Robot Framework
+Close Browser
+
+After Refactoring (Using Modular Keywords):
+
+*** Test Cases ***
+Search Test Refactored
+Navigate To Search Engine
+Perform Search Query    Robot Framework
+Verify Search Results    Robot Framework
+Close Application
+
+*** Keywords ***
+Navigate To Search Engine
+Open Browser    [https://google.com](https://google.com)    chrome
+
+Perform Search Query
+[Arguments]    ${term}
+Input Text    name=q    ${term}
+Press Keys    name=q    RETURN
+
+Verify Search Results
+[Arguments]    ${expected_text}
+Page Should Contain    ${expected_text}
+
+Close Application
+Close Browser
+
+In the refactored version, each keyword performs a specific responsibility. This makes the test case easier to read and allows the same keywords to be reused in other tests.
+
+============================================================
+4. MOVING KEYWORDS TO RESOURCE FILES
+====================================
+
+When multiple Robot Framework test suites need to use the same keywords and variables, they can be placed in separate resource files.
+
+Resource files help avoid duplicate code and allow common functionality to be shared across different test suites.
+
+A. Resource File Structure
+
+Example file:
+
+resources/common.resource
+
+*** Settings ***
+Documentation    Shared Common Keywords and Locators.
+Library          SeleniumLibrary
+
+*** Variables ***
+${BROWSER}       chrome
+${LOGIN_URL}     [https://example.com/login](https://example.com/login)
+
+*** Keywords ***
+Open Main Portal
+Open Browser    ${LOGIN_URL}    ${BROWSER}
+Maximize Browser Window
+
+B. Importing the Resource File
+
+The resource file can then be imported into a Robot Framework test suite.
+
+Example test file:
+
+test_login.robot
+
+*** Settings ***
+Resource    resources/common.resource
+
+*** Test Cases ***
+Test Main Portal
+Open Main Portal
+Close Browser
+
+By using resource files, common keywords and variables can be maintained in one location and reused by multiple test suites.
+
+============================================================
+5. ADDING SETUP AND TEARDOWN
+============================
+
+Setup and teardown mechanisms help ensure that test cases start and finish in a clean state.
+
+They can be used to open and close browsers, initialize test environments, clear application data, or perform other preparation and cleanup activities.
+
+A. Suite-Level Setup and Teardown
+
+Suite setup runs before the test cases in a suite begin, while suite teardown runs after the entire suite has finished.
+
+*** Settings ***
+Suite Setup       Initialize Environment
+Suite Teardown    Cleanup Environment
+
+*** Keywords ***
+Initialize Environment
+Log To Console    Starting Suite Execution...
+
+Cleanup Environment
+Log To Console    Completed Suite Execution.
+
+B. Test-Level Setup and Teardown
+
+Test setup and teardown can be configured globally under *** Settings *** using Test Setup and Test Teardown.
+
+They can also be specified for an individual test case using [Setup] and [Teardown].
+
+Example:
+
+*** Test Cases ***
+Individual Test With Custom Teardown
+[Setup]       Open Browser To Home Page
+Do Action Step
+[Teardown]    Capture Page Screenshot And Close Browser
+
+*** Keywords ***
+Capture Page Screenshot And Close Browser
+Capture Page Screenshot
+Close Browser
+
+Using setup and teardown helps prevent leftover browser sessions and ensures that the application is returned to an appropriate state after test execution.
+
+============================================================
+6. OVERVIEW OF PAGE OBJECTS
+===========================
+
+The Page Object Model (POM) is a design pattern used to separate web-page locators and actions from the actual test cases.
+
+In Robot Framework, page-specific locators and keywords can be placed inside separate resource files. For example, login-related elements can be stored in LoginPage.resource, while dashboard-related elements can be stored in DashboardPage.resource.
+
+Typical Robot Framework POM Structure:
+
+project_root/
+├── pages/
+│   ├── LoginPage.resource
+│   └── DashboardPage.resource
+├── tests/
+│   └── LoginTests.robot
+
+Example Page Object Resource:
+
+pages/LoginPage.resource
+
+*** Settings ***
+Library    SeleniumLibrary
+
+*** Variables ***
+${TXT_USERNAME}    id=txtUsername
+${TXT_PASSWORD}    id=txtPassword
+${BTN_LOGIN}       id=btnLogin
+
+*** Keywords ***
+Enter Username
+[Arguments]    ${username}
+Input Text    ${TXT_USERNAME}    ${username}
+
+Enter Password
+[Arguments]    ${password}
+Input Password    ${TXT_PASSWORD}    ${password}
+
+Click Login
+Click Button    ${BTN_LOGIN}
+
+Using POM keeps locators and page-related actions in one place. If a locator changes, it can be updated in the page resource instead of modifying every test case that uses it.
+
+============================================================
+7. INCREASING READABILITY USING GHERKIN
+=======================================
+
+Gherkin-style syntax improves test readability by describing test scenarios in a way that resembles natural language.
+
+It allows test cases to communicate the expected behavior of an application clearly, making them easier for both technical and non-technical team members to understand.
+
+Example Gherkin Specification in Robot Framework:
+
+*** Settings ***
+Resource    resources/common.resource
+
+*** Test Cases ***
+Successful Customer Search
+Given the user is logged into customer dashboard
+When the user searches for customer "John Doe"
+Then customer details for "John Doe" should be displayed in results table
+
+*** Keywords ***
+The user is logged into customer dashboard
+Log To Console    Logging into dashboard...
+
+The user searches for customer "${customer_name}"
+Log To Console    Searching for ${customer_name}...
+
+Customer details for "${customer_name}" should be displayed in results table
+Log To Console    Verifying ${customer_name} in results table...
+
+Using Gherkin-style keywords makes the test case describe the expected behavior rather than focusing only on the technical implementation details. This improves communication between developers, testers, business analysts, and other project stakeholders.

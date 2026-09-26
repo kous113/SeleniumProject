@@ -1,0 +1,181 @@
+# SELENIUM WEBDRIVER — INTRODUCTION AND INSTALLATION
+
+---
+
+## 1. INTRODUCTION TO SELENIUM 4 WEBDRIVER
+
+Selenium 4 is a major version of the Selenium web automation framework. It follows the **W3C WebDriver standard**, providing direct and standardized communication between automation scripts and browser drivers.
+
+### Key Features of Selenium 4
+
+• **W3C WebDriver Standard:**
+Provides standardized communication between test scripts and browser drivers, improving reliability and consistency.
+
+• **Chrome DevTools Protocol (CDP) Support:**
+Allows automation scripts to interact with browser-level features such as network throttling, performance monitoring, browser emulation, and console logs.
+
+• **Relative Locators:**
+Allows elements to be identified based on their position relative to other elements using methods such as `above()`, `below()`, `to_left_of()`, `to_right_of()`, and `near()`.
+
+• **New Tab and Window Management:**
+Provides built-in methods for creating and switching between browser tabs and windows, such as `driver.switch_to.new_window('tab')`.
+
+• **Built-in Selenium Manager:**
+Automatically detects the browser and manages the required browser driver, reducing the need for manual driver configuration.
+
+---
+
+## 2. SELENIUM WEBDRIVER ARCHITECTURE
+
+Selenium 4 WebDriver follows a standard four-component architecture:
+
+### 1. Selenium Client Libraries / Language Bindings
+
+These are language-specific APIs such as Python, Java, C#, and JavaScript that allow testers to write automation scripts.
+
+### 2. W3C WebDriver Protocol
+
+This protocol defines the standardized communication between the automation script and the browser driver.
+
+### 3. Browser Drivers
+
+Browser drivers act as intermediaries between the automation script and the browser. Examples include:
+
+• ChromeDriver
+• GeckoDriver
+• Microsoft Edge WebDriver
+
+### 4. Web Browsers
+
+These are the actual browsers where automated actions are performed, such as:
+
+• Google Chrome
+• Mozilla Firefox
+• Microsoft Edge
+
+---
+
+## 3. SOFTWARE REQUIRED FOR THIS COURSE
+
+The following software and tools are required:
+
+• **Python 3.x:** Used to execute Python automation scripts.
+
+• **Code Editor / IDE:** PyCharm or Visual Studio Code (VS Code).
+
+• **Web Browsers:** Google Chrome, Microsoft Edge, and Mozilla Firefox.
+
+• **Python Libraries:** Selenium 4.x and `webdriver-manager`.
+
+---
+
+## 4. INSTALLING SELENIUM WEBDRIVER WITH PYTHON 3
+
+Follow these steps to set up Selenium:
+
+### Step 1: Create a Virtual Environment
+
+python -m venv .venv
+
+### Step 2: Activate the Virtual Environment in PowerShell
+
+..venv\Scripts\Activate.ps1
+
+### Step 3: Upgrade pip and Install Selenium
+
+pip install --upgrade pip
+
+pip install selenium
+
+### Step 4: Install webdriver-manager
+
+The `webdriver-manager` package is an optional helper for managing browser drivers.
+
+pip install webdriver-manager
+
+---
+
+## 5. CONFIGURING DRIVERS IN THE SYSTEM PATH — WINDOWS
+
+There are two common approaches for managing browser drivers.
+
+### Method A: Automatic Driver Management — Recommended
+
+• Selenium 4 includes **Selenium Manager**, which can automatically detect the installed browser and obtain the appropriate driver.
+
+• Alternatively, the `webdriver-manager` Python library can be used to assist with driver management.
+
+### Method B: Manual PATH Configuration
+
+Follow these steps to configure a driver manually:
+
+1. Download the appropriate ChromeDriver, GeckoDriver, or Edge WebDriver version for your browser.
+
+2. Extract the driver executable to a folder such as:
+
+C:\drivers\
+
+3. Open Windows System Environment Variables:
+   **Win + R → sysdm.cpl → Advanced → Environment Variables**
+
+4. Under **System Variables**, select `Path`.
+
+5. Click **Edit → New** and add:
+
+C:\drivers\
+
+6. Open Command Prompt and verify the driver installation using:
+
+chromedriver --version
+
+---
+
+## 6. RUNNING TESTS ON DIFFERENT BROWSERS
+
+Selenium allows the same automation framework to work with multiple browsers, including Chrome, Edge, and Firefox.
+
+### A. Google Chrome
+
+from selenium import webdriver
+
+# Selenium 4 automatically manages the driver
+
+driver = webdriver.Chrome()
+driver.get("https://www.google.com")
+print("Chrome Title:", driver.title)
+driver.quit()
+
+### B. Microsoft Edge
+
+from selenium import webdriver
+
+driver = webdriver.Edge()
+driver.get("https://www.bing.com")
+print("Edge Title:", driver.title)
+driver.quit()
+
+### C. Mozilla Firefox
+
+from selenium import webdriver
+
+driver = webdriver.Firefox()
+driver.get("https://www.mozilla.org")
+print("Firefox Title:", driver.title)
+driver.quit()
+
+---
+
+## QUICK SUMMARY
+
+| Topic                  | Key Point                                                        |
+| ---------------------- | ---------------------------------------------------------------- |
+| Selenium 4             | Modern web automation framework using the W3C WebDriver standard |
+| Selenium Manager       | Automatically manages compatible browser drivers                 |
+| WebDriver Architecture | Client → W3C Protocol → Browser Driver → Browser                 |
+| Virtual Environment    | Provides an isolated Python environment                          |
+| Selenium Installation  | Install using `pip install selenium`                             |
+| webdriver-manager      | Optional driver-management helper                                |
+| Chrome                 | `webdriver.Chrome()`                                             |
+| Edge                   | `webdriver.Edge()`                                               |
+| Firefox                | `webdriver.Firefox()`                                            |
+| Closing Browser        | `driver.quit()`                                                  |

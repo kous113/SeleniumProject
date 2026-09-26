@@ -1,0 +1,447 @@
+# PART 2: PYTEST FRAMEWORK
+
+---
+
+## 1. INTRODUCTION TO PYTEST
+
+PyTest is a mature and feature-rich Python testing framework that makes it easy to create simple, readable tests while also supporting complex functional testing for applications and libraries.
+
+### Key Features and Advantages over `unittest`
+
+1. **Reduced Boilerplate:**
+
+   * There is no need to create classes that inherit from base test classes.
+   * Assertions can be written using standard Python `assert` statements instead of special methods such as `self.assertEqual()`.
+
+2. **Powerful Fixture Architecture:**
+
+   * PyTest fixtures are explicit, modular, reusable, and scalable.
+   * Fixtures can be shared across tests, modules, and sessions through dependency injection.
+
+3. **Parameterization:**
+
+   * PyTest provides built-in support for executing the same test multiple times with different input data using `@pytest.mark.parametrize`.
+
+4. **Rich Plugin Ecosystem:**
+
+   * PyTest can be extended using numerous plugins, including:
+
+     * `pytest-html` — HTML test reports
+     * `pytest-xdist` — Parallel test execution
+     * `pytest-cov` — Code coverage
+     * `pytest-rerunfailures` — Re-running failed tests
+
+5. **Intelligent Assertion Introspection:**
+
+   * When an assertion fails, PyTest provides detailed information about the failure, including relevant variable values and expressions.
+
+---
+
+## 2. INSTALLING PYTEST AND NAMING CONVENTIONS
+
+### Installation
+
+To install PyTest using `pip`, run:
+
+```bash
+pip install pytest
+```
+
+To verify that PyTest has been installed successfully:
+
+```bash
+pytest --version
+```
+
+### PyTest Naming Conventions
+
+PyTest automatically discovers tests when the `pytest` command is executed. It searches directories and subdirectories according to specific naming rules.
+
+#### 1. Test Files
+
+Test file names must:
+
+* Start with `test_`, for example `test_login.py`
+* OR end with `_test.py`, for example `login_test.py`
+
+#### 2. Test Classes
+
+Test class names must:
+
+* Start with `Test`, for example `TestAdminLogin`
+* Not contain an `__init__` constructor method
+
+#### 3. Test Functions / Methods
+
+Test function or method names must start with `test_`.
+
+Example:
+
+```python
+def test_valid_credentials():
+    pass
+```
+
+---
+
+## 3. TEST FILES, TEST METHODS, AND ASSERTIONS
+
+In PyTest, tests are generally written as normal Python functions. Test methods can also be placed inside a `Test` class.
+
+PyTest uses standard Python `assert` statements for validation.
+
+### Example PyTest File (`test_sample.py`)
+
+```python
+import pytest
+from selenium import webdriver
+
+def test_google_title():
+    driver = webdriver.Chrome()
+    driver.get("https://www.google.com")
+    
+    # Standard Python assert statement with detailed inspection on failure
+    assert driver.title == "Google", f"Expected 'Google' but got '{driver.title}'"
+    
+    driver.quit()
+
+def test_string_containment():
+    heading = "Welcome to Selenium Testing"
+    assert "Selenium" in heading
+
+def test_exception_handling():
+    # Verify that an exception is raised
+    with pytest.raises(ZeroDivisionError):
+        res = 1 / 0
+```
+
+### Assertion Comparison
+
+**Unittest:**
+
+```python
+self.assertEqual(a, b)
+```
+
+**PyTest:**
+
+```python
+assert a == b
+```
+
+---
+
+## 4. SUBSETS AND TEST SUITES
+
+PyTest allows you to execute specific groups or subsets of tests without making changes to the test code.
+
+### 1. Running Specific Test Files
+
+```bash
+pytest test_login.py test_signup.py
+```
+
+This executes the tests contained in the specified files.
+
+### 2. Running Tests by Keyword Matching (`-k`)
+
+The `-k` option runs tests whose names match a specified keyword or Boolean expression.
+
+```bash
+pytest -k "login"
+```
+
+Run tests matching either `login` or `admin`:
+
+```bash
+pytest -k "login or admin"
+```
+
+Run tests that do not contain `regression`:
+
+```bash
+pytest -k "not regression"
+```
+
+### 3. Running Tests Using Custom Markers (`@pytest.mark`)
+
+Markers can be used to categorize tests logically, such as smoke tests or regression tests.
+
+```python
+import pytest
+
+@pytest.mark.smoke
+def test_smoke_check():
+    assert True
+
+@pytest.mark.regression
+def test_full_regression():
+    assert True
+```
+
+Tests can then be executed using the `-m` option.
+
+Run smoke tests:
+
+```bash
+pytest -m smoke
+```
+
+Run smoke tests while excluding slow tests:
+
+```bash
+pytest -m "smoke and not slow"
+```
+
+### Registering Custom Markers
+
+Custom markers should be registered in `pytest.ini` to avoid warnings.
+
+```ini
+[pytest]
+markers =
+    smoke: mark test as smoke test
+    regression: mark test as regression test
+```
+
+---
+
+## 5. FIXTURES AND CONFTEST.PY
+
+Fixtures are functions used to prepare the required conditions before a test and perform cleanup after the test finishes.
+
+### Declaring a Fixture
+
+A fixture is created using the `@pytest.fixture` decorator.
+
+### Yield Pattern for Teardown
+
+When using `yield` inside a fixture:
+
+* Code written **before `yield`** performs the setup.
+* Code written **after `yield`** performs the teardown.
+
+### Fixture Scopes
+
+PyTest provides different fixture scopes:
+
+* **`function`** — Default scope; runs once for every test function.
+* **`class`** — Runs once for every test class.
+* **`module`** — Runs once for every Python module (`.py` file).
+* **`session`** — Runs once for the complete test session.
+
+### Role of `conftest.py`
+
+`conftest.py` is a special PyTest file used to share fixtures across multiple test files.
+
+Fixtures defined in `conftest.py` can be automatically discovered by tests without explicitly importing them.
+
+### Example `conftest.py`
+
+```python
+import pytest
+from selenium import webdriver
+
+@pytest.fixture(scope="function")
+def driver():
+    # Setup: Initialize Chrome driver
+    print("\n[SETUP] Launching Chrome Browser...")
+    driver_instance = webdriver.Chrome()
+    driver_instance.maximize_window()
+    driver_instance.implicitly_wait(10)
+    
+    yield driver_instance  # Provide fixture value to test
+    
+    # Teardown: Quit driver
+    print("\n[TEARDOWN] Quitting Chrome Browser...")
+    driver_instance.quit()
+```
+
+### Example Usage in Test File (`test_search.py`)
+
+```python
+def test_search_example(driver):
+    driver.get("https://www.google.com")
+    assert "Google" in driver.title
+```
+
+---
+
+## 6. PYTEST FEATURES
+
+### 1. Parameterization (`@pytest.mark.parametrize`)
+
+Parameterization allows multiple sets of data to be passed to a single test function.
+
+This is useful for performing **Data-Driven Testing (DDT)**.
+
+```python
+import pytest
+
+@pytest.mark.parametrize("username, password, expected", [
+    ("valid_user", "correct_pass", True),
+    ("invalid_user", "correct_pass", False),
+    ("valid_user", "wrong_pass", False),
+])
+def test_login_credentials(username, password, expected):
+    print(f"Testing login for {username}")
+
+    # Simulate authentication logic
+    result = (username == "valid_user" and password == "correct_pass")
+
+    assert result == expected
+```
+
+### 2. Skipping Tests and Expected Failures
+
+PyTest provides decorators for controlling test execution:
+
+* `@pytest.mark.skip(reason="...")` — Unconditionally skips a test.
+* `@pytest.mark.skipif(condition, reason="...")` — Skips a test when a specified condition is true.
+* `@pytest.mark.xfail` — Marks a test as expected to fail.
+
+### 3. Command-Line Custom Options (`pytest_addoption`)
+
+Custom command-line options can be added to pass parameters during test execution.
+
+Examples include:
+
+```text
+--browser chrome
+--env staging
+```
+
+This allows the same test framework to be executed with different browsers or environments.
+
+---
+
+## 7. RUN MULTIPLE TEST CASES
+
+PyTest allows multiple test cases to be executed across different directories and files.
+
+### 1. Run All Tests in a Project Directory
+
+```bash
+pytest
+```
+
+### 2. Run All Tests in a Specific Folder
+
+```bash
+pytest tests/
+```
+
+### 3. Run Multiple Specific Test Files
+
+```bash
+pytest tests/test_login.py tests/test_cart.py
+```
+
+### 4. Useful CLI Flags
+
+| Flag               | Purpose                                                                        |
+| ------------------ | ------------------------------------------------------------------------------ |
+| `-v` / `--verbose` | Displays detailed output, including each test method name and its status.      |
+| `-s`               | Disables output capture so `print()` statements are displayed in the console.  |
+| `--tb=short`       | Displays a shortened traceback when a test fails.                              |
+| `-n <num>`         | Executes tests in parallel across multiple CPU cores. Requires `pytest-xdist`. |
+
+---
+
+## 8. MOVING SELENIUM TEST TO PYTEST
+
+Converting Selenium tests from the `unittest` framework to PyTest can make the test code more readable and modular.
+
+### Before — Unittest Style
+
+```python
+import unittest
+from selenium import webdriver
+
+class UnittestSelenium(unittest.TestCase):
+    def setUp(self):
+        self.driver = webdriver.Chrome()
+
+    def test_title(self):
+        self.driver.get("https://example.com")
+        self.assertEqual(self.driver.title, "Example Domain")
+
+    def tearDown(self):
+        self.driver.quit()
+```
+
+### After — PyTest Style
+
+#### `conftest.py`
+
+```python
+import pytest
+from selenium import webdriver
+
+@pytest.fixture
+def setup_driver():
+    driver = webdriver.Chrome()
+    yield driver
+    driver.quit()
+```
+
+#### `test_example.py`
+
+```python
+def test_title(setup_driver):
+    driver = setup_driver
+    driver.get("https://example.com")
+    assert driver.title == "Example Domain"
+```
+
+### Key Refactoring Steps
+
+1. Replace `unittest.TestCase` inheritance with standard Python test functions.
+2. Move setup and teardown operations into `@pytest.fixture` functions using `yield`.
+3. Replace `self.assertEqual(...)` with standard Python `assert` statements.
+4. Use dependency injection to provide fixtures as test function arguments.
+
+---
+
+## 9. INSTALL PYTEST-HTML PLUGIN AND GENERATE HTML REPORTS
+
+The `pytest-html` plugin can be used to generate HTML reports containing test execution results.
+
+### Installation
+
+Install the plugin using:
+
+```bash
+pip install pytest-html
+```
+
+### Generating HTML Reports
+
+Run PyTest with the `--html` option and specify the desired report location:
+
+```bash
+pytest --html=reports/report.html --self-contained-html
+```
+
+### Options
+
+* `--html=report.html` — Specifies the path where the HTML report will be saved.
+* `--self-contained-html` — Embeds CSS, images, and JavaScript directly into a single standalone HTML file, making the report easier to share through email or CI/CD artifacts.
+
+### Customizing Reports in `conftest.py`
+
+The HTML report can be customized using PyTest hooks.
+
+For example, you can add:
+
+* Browser information
+* Operating system details
+* Tester name
+* Screenshot thumbnails when a test fails
+
+Relevant PyTest hooks include:
+
+```text
+pytest_html_results_table_header
+pytest_runtest_makereport
+```

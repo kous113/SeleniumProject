@@ -1,0 +1,222 @@
+# PART 1: INTRODUCTION TO ROBOT FRAMEWORK
+
+---
+
+## 1. INTRODUCTION TO ROBOT FRAMEWORK
+
+Robot Framework is an open-source, generic automation framework used for acceptance testing, Acceptance Test-Driven Development (ATDD), and Robotic Process Automation (RPA).
+
+### Key Architecture Features
+
+1. **Keyword-Driven Architecture:** Test cases are created using simple, human-readable keywords such as `Open Browser`, `Input Text`, and `Click Button`.
+
+2. **Tabular / Space-Separated Syntax:** Robot Framework test files use plain-text syntax, where two or more spaces or tabs are generally used to separate columns.
+
+3. **Extensible Ecosystem:** Robot Framework can work with various Python-based libraries, including `SeleniumLibrary`, `RequestsLibrary`, and `DatabaseLibrary`.
+
+4. **HTML Test Reports:** After execution, Robot Framework automatically generates detailed HTML reports and logs, commonly named `report.html` and `log.html`.
+
+5. **Cross-Platform Support:** Robot Framework can be used on major operating systems, including Windows, macOS, and Linux.
+
+---
+
+## 2. INSTRUCTIONS TO SET UP THE ENVIRONMENT AND REQUIRED PACKAGES
+
+### Step-by-Step Installation
+
+**Step 1: Install Python (3.8 or later)**
+
+Make sure Python and `pip` are installed correctly and available through the system PATH.
+
+**Step 2: Install Robot Framework**
+
+Run the following command:
+
+
+pip install robotframework
+
+
+**Step 3: Install SeleniumLibrary**
+
+For web automation using Selenium, install the SeleniumLibrary package:
+
+
+pip install robotframework-seleniumlibrary
+
+
+**Step 4: Configure the Web Driver**
+
+Selenium 4 includes Selenium Manager, which can automatically manage browser drivers such as ChromeDriver and GeckoDriver in many common setups.
+
+**Step 5: Verify the Installation**
+
+Check whether Robot Framework has been installed successfully:
+
+
+robot --version
+
+
+---
+
+## 3. ROBOT FRAMEWORK – RIDE AND WRITING A SIMPLE TEST CASE USING RIDE
+
+RIDE (Robot Framework Integrated Development Environment) is a graphical editor used to create, edit, and manage Robot Framework test suites.
+
+### A. Installing RIDE
+
+Install RIDE using:
+
+
+pip install robotframework-ride
+
+
+To start RIDE:
+
+
+ride.py
+
+
+### B. Important Features of RIDE
+
+* **Grid-Based Editor:** Provides a structured interface for managing test suites, settings, keywords, and test cases.
+* **Syntax Highlighting and Auto-Completion:** Helps users write Robot Framework commands and suggests available keywords.
+* **Test Execution Support:** Allows users to execute test suites and review the generated results and logs.
+
+### C. Creating a Simple Test Case in RIDE
+
+1. Open RIDE and select **File → New Project**. Choose **Directory** as the project type and **ROBOT** as the format.
+2. Right-click the project and create a new test suite, for example, `Suite1.robot`.
+3. Open the suite settings and add the `SeleniumLibrary`.
+4. Right-click the suite and create a new test case named `Verify Google Search`.
+5. Add the following test steps:
+
+
+Open Browser    https://www.google.com    chrome
+Input Text      name=q                    Robot Framework
+Press Keys      name=q                    RETURN
+Page Should Contain    Robot Framework
+Close Browser
+
+
+---
+
+## 4. KEYWORD-DRIVEN AND DATA-DRIVEN TEST CASES
+
+Robot Framework supports both **Keyword-Driven** and **Data-Driven** testing approaches.
+
+### A. Keyword-Driven Test Cases
+
+In the Keyword-Driven approach, the test case is organized as a sequence of keywords that describe the actions performed during the test.
+
+
+*** Settings ***
+Library    SeleniumLibrary
+
+*** Test Cases ***
+Valid Login Test
+    Open Browser To Login Page
+    Input Username    admin
+    Input Password    password123
+    Submit Credentials
+    Welcome Page Should Be Open
+
+
+Here, each keyword represents a specific action or validation involved in the login process.
+
+### B. Data-Driven Test Cases
+
+Data-Driven testing allows the same test logic to be executed with multiple sets of input data. Robot Framework provides the `Test Template` feature for this purpose.
+
+
+*** Settings ***
+Library         SeleniumLibrary
+Test Template    Invalid Login Template
+
+*** Test Cases ***                    USERNAME        PASSWORD
+Empty Username                        ${EMPTY}        secret_pass
+Empty Password                        admin_user      ${EMPTY}
+Invalid Credentials                   wrong_user      wrong_pass
+
+*** Keywords ***
+Invalid Login Template
+    [Arguments]    ${username}    ${password}
+    Input Username    ${username}
+    Input Password    ${password}
+    Click Login Button
+    Error Message Should Be Displayed
+
+
+In this example, the same `Invalid Login Template` is executed with different username and password combinations.
+
+---
+
+## 5. WORKING WITH THE COMMAND LINE, TEST SETUP, AND TEARDOWN
+
+### A. Running Tests from the Command Line
+
+Robot Framework tests can be executed directly from the terminal.
+
+**Execute a single test suite:**
+
+
+ test_suite.
+
+
+**Execute all test suites in a directory:**
+
+
+robot path/to/tests/
+
+
+**Store generated results in a specific directory:**
+
+
+robot -d results/ test_suite.robot
+
+
+**Execute tests using a specific tag:**
+
+
+robot -i smoke test_suite.robot
+
+
+### B. Setup and Teardown
+
+Robot Framework provides setup and teardown mechanisms for preparing and cleaning up test environments.
+
+* **Suite Setup:** Runs once before the test cases in a suite begin.
+* **Suite Teardown:** Runs once after all test cases in the suite have completed.
+* **Test Setup:** Runs before every individual test case.
+* **Test Teardown:** Runs after every individual test case, including cases that fail.
+
+### Example
+
+robot
+*** Settings ***
+Documentation     Suite Setup and Teardown Example
+Library           SeleniumLibrary
+Suite Setup       Open Browser    https://example.com    chrome
+Suite Teardown    Close All Browsers
+Test Setup        Log To Console    Starting new test case...
+Test Teardown     Delete All Cookies
+
+
+---
+
+## 6. WORKING WITH BROWSERS USING SELENIUMLIBRARY
+
+SeleniumLibrary provides several built-in keywords for controlling browsers and interacting with web pages.
+
+| Keyword                       | Description and Example                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Open Browser**              | Opens a browser and navigates to the specified URL. Example: `Open Browser    https://google.com    chrome`   |
+| **Input Text**                | Enters text into an input element. Example: `Input Text    id=username    admin_user`                         |
+| **Input Password**            | Enters a value into a password field. Example: `Input Password    id=password    secret_pass`                 |
+| **Click Button**              | Clicks a button identified by a locator. Example: `Click Button    xpath=//button[@type='submit']`            |
+| **Click Element**             | Clicks a general web element such as a link, image, or `div`. Example: `Click Element    css=.submit-btn`     |
+| **Page Should Contain**       | Verifies that specific text exists somewhere on the current page. Example: `Page Should Contain    Dashboard` |
+| **Element Should Be Visible** | Checks whether a particular element is visible. Example: `Element Should Be Visible    id=welcome_msg`        |
+| **Close Browser**             | Closes the currently active browser window.                                                                   |
+| **Close All Browsers**        | Closes all browser windows opened during the test execution.                                                  |
+
+These keywords make it possible to automate common browser operations and perform validations without directly writing Selenium WebDriver code.
