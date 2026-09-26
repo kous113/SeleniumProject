@@ -1,0 +1,316 @@
+# PART 4: HANDLING HTTP RESPONSES
+
+## 1. Understanding Response Objects
+
+When the `requests` library completes an HTTP request, it returns a `Response` object. This object contains the response content and metadata received from the server.
+
+### Key Attributes and Methods of `requests.Response`
+
+* `response.status_code`: Returns the integer HTTP status code, such as `200` or `404`.
+* `response.ok`: Returns `True` when the status code is less than `400`.
+* `response.text`: Returns the response content as a decoded Unicode string.
+* `response.content`: Returns the raw response content as bytes, such as `b'...'`.
+* `response.json()`: Parses the response content as JSON. It raises a `ValueError` if the content is not valid JSON.
+* `response.headers`: Provides the HTTP response headers in a case-insensitive dictionary.
+* `response.cookies`: Contains cookies received from the server through a `RequestsCookieJar`.
+* `response.url`: Returns the final URL of the request after redirects have been followed.
+* `response.history`: Contains a list of previous `Response` objects when redirects occur.
+* `response.elapsed`: Returns the `timedelta` representing the time between sending the request and receiving the response.
+* `response.encoding`: Specifies the encoding used to decode `.text`.
+* `response.raise_for_status()`: Raises an `HTTPError` when the response status code is in the `4xx` or `5xx` range.
+
+---
+
+## 2. Reading Response Content
+
+The `requests` library provides three commonly used ways to access response data:
+
+### A. `response.text`
+
+* Converts the raw response bytes into a string.
+* Uses the encoding specified or detected for the response.
+* Useful for reading HTML, plain text, XML, and other text-based responses.
+
+### B. `response.content`
+
+* Returns the raw response data as a `bytes` object.
+* Useful when working with binary files such as:
+
+  * Images
+  * Audio files
+  * Videos
+  * PDF documents
+  * ZIP archives
+
+### C. `response.json()`
+
+* Parses the response body as JSON.
+* Convenient for working with REST API responses.
+* Raises an error when the response does not contain valid JSON.
+
+---
+
+## 3. Handling Binary and Text Data
+
+### A. Downloading and Saving a Binary File
+
+For example, an image or PDF can be downloaded and saved using `response.content`.
+
+```python
+import requests
+
+url = "https://httpbin.org/image/png"
+response = requests.get(url)
+
+if response.status_code == 200:
+    # Save raw bytes to file
+    with open("downloaded_image.png", "wb") as file:
+        file.write(response.content)
+
+    print("Image saved successfully.")
+```
+
+### B. Handling Custom Text Encoding
+
+If automatic encoding detection does not produce the expected result, a specific encoding can be assigned manually.
+
+```python
+res = requests.get("https://example.com")
+
+# Force specific encoding if auto-detection fails
+res.encoding = "utf-8"
+
+print(res.text)
+```
+
+---
+
+## 4. Status Codes and Error Handling
+
+HTTP status codes are grouped into five major categories.
+
+### 1. 1xx — Informational
+
+Indicates that the request has been received and processing is continuing.
+
+### 2. 2xx — Success
+
+Indicates that the request was successfully processed.
+
+* `200 OK`: Standard successful request.
+* `201 Created`: Resource was successfully created, commonly through POST.
+* `202 Accepted`: Request was accepted for processing but has not been completed yet.
+* `204 No Content`: Request was successful, but the response contains no body.
+
+### 3. 3xx — Redirection
+
+Indicates that additional action may be required to complete the request.
+
+* `301 Moved Permanently`: Resource has been permanently relocated.
+* `302 Found`: Resource has been temporarily relocated.
+* `304 Not Modified`: Cached version of the resource is still valid.
+
+### 4. 4xx — Client Errors
+
+Indicates that there is an issue with the client request.
+
+* `400 Bad Request`: Invalid request syntax or payload.
+* `401 Unauthorized`: Authentication is missing or invalid.
+* `403 Forbidden`: User is authenticated but does not have the required permission.
+* `404 Not Found`: Requested resource or URI does not exist.
+* `409 Conflict`: Request conflicts with the current server state.
+* `422 Unprocessable Entity`: Request contains validation errors.
+* `429 Too Many Requests`: Request rate has exceeded the allowed limit.
+
+### 5. 5xx — Server Errors
+
+Indicates that the server encountered an error while processing the request.
+
+* `500 Internal Server Error`: Generic server-side error or unhandled exception.
+* `502 Bad Gateway`: Invalid response received from an upstream server.
+* `503 Service Unavailable`: Server is unavailable, overloaded, or undergoing maintenance.
+* `504 Gateway Timeout`: Upstream server failed to respond within the expected time.
+
+---
+
+## 5. Validating Success and Error Codes
+
+Status codes can be validated programmatically to make sure the API returns the expected response.
+
+```python
+import requests
+
+def validate_api_response(response, expected_status=200):
+    if response.status_code != expected_status:
+        raise AssertionError(
+            f"API Error! Expected status {expected_status}, "
+            f"received {response.status_code}. Response Body: {response.text}"
+        )
+
+    return True
+```
+
+This helper raises an `AssertionError` whenever the actual status code does not match the expected status.
+
+---
+
+## 6. Exception Handling in Requests
+
+The custom exceptions raised by the `requests` library inherit from `requests.exceptions.RequestException`.
+
+### Exception Hierarchy
+
+```text
+RequestException
+├── ConnectionError
+│   └── SSLError
+├── HTTPError (from raise_for_status)
+├── Timeout
+│   ├── ConnectTimeout
+│   └── ReadTimeout
+└── TooManyRedirects
+```
+
+### Robust Exception Handling
+
+```python
+import requests
+from requests.exceptions import (
+    RequestException,
+    HTTPError,
+    ConnectionError,
+    Timeout
+)
+
+try:
+    response = requests.get(
+        "https://api.example.com/data",
+        timeout=5
+    )
+
+    response.raise_for_status()  # Raises HTTPError for 4xx/5xx
+    data = response.json()
+
+except ConnectionError as ce:
+    print(f"[ERROR] Network connection failed: {ce}")
+
+except Timeout as te:
+    print(f"[ERROR] Request timed out: {te}")
+
+except HTTPError as he:
+    print(
+        f"[ERROR] HTTP status error: "
+        f"{he.response.status_code} - {he.response.text}"
+    )
+
+except RequestException as re:
+    print(f"[ERROR] Fatal Requests error: {re}")
+```
+
+---
+
+## 7. Advanced Response Handling
+
+### A. Tracking Redirect History
+
+The `response.history` attribute can be used to inspect previous responses when redirects occur.
+
+```python
+res = requests.get("http://github.com")  # Redirects HTTP -> HTTPS
+
+print("Final URL:", res.url)
+
+print("Redirect History:")
+
+for history_item in res.history:
+    print(f"  {history_item.status_code} -> {history_item.url}")
+```
+
+This allows you to see the redirect chain and the final URL reached by the request.
+
+### B. Measuring Request Latency and Performance SLA
+
+The `response.elapsed` attribute can be used to measure how long a request took.
+
+```python
+res = requests.get("https://httpbin.org/delay/1")
+
+response_time_sec = res.elapsed.total_seconds()
+
+print(f"Request Latency: {response_time_sec:.3f} seconds")
+
+# SLA Assertion: API response must complete within 2.0 seconds
+assert response_time_sec < 2.0, \
+    f"SLA Breach! Latency was {response_time_sec}s"
+```
+
+The assertion verifies that the API response is received within the defined **2-second SLA**.
+
+---
+
+## 8. Streaming Large Responses
+
+When downloading large files or continuous data streams, loading the complete response into memory using `response.content` can result in high memory usage.
+
+Using `stream=True` allows the response to be processed in smaller chunks.
+
+```python
+import requests
+
+url = "https://httpbin.org/stream-bytes/102400"  # 100KB stream data
+
+with requests.get(url, stream=True) as response:
+    response.raise_for_status()
+
+    with open("large_output.bin", "wb") as f:
+        # Iterate over response in 10KB chunks
+        for chunk in response.iter_content(chunk_size=10240):
+            if chunk:  # Filter out keep-alive new chunks
+                f.write(chunk)
+
+print("Stream download complete.")
+```
+
+### Key Point
+
+Instead of loading the entire response into memory at once, `iter_content()` processes the response in manageable chunks.
+
+---
+
+## 9. Handling Cookies and Sessions
+
+A `requests.Session()` object can be used to maintain cookies across multiple API requests.
+
+```python
+import requests
+
+# Creating Session object
+session = requests.Session()
+
+# 1. Set explicit cookies on session
+session.cookies.set(
+    "auth_token",
+    "secret_token_val",
+    domain="httpbin.org"
+)
+
+# 2. Make request (Cookie is sent automatically)
+res = session.get("https://httpbin.org/cookies")
+
+print("Cookies sent to server:", res.json()["cookies"])
+
+# 3. Clear session cookies
+session.cookies.clear()
+```
+
+### Summary
+
+* **`response.status_code`** → Checks the HTTP status.
+* **`response.text`** → Reads text-based response content.
+* **`response.content`** → Reads raw binary response data.
+* **`response.json()`** → Parses JSON responses.
+* **`raise_for_status()`** → Raises an exception for `4xx` and `5xx` responses.
+* **`response.history`** → Tracks redirects.
+* **`response.elapsed`** → Measures request duration.
+* **`stream=True`** → Helps process large responses in chunks.
+* **Sessions and cookies** → Maintain state across API requests.

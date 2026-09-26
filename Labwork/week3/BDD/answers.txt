@@ -1,0 +1,400 @@
+# PART 5: BDD (BEHAVIOR-DRIVEN DEVELOPMENT)
+
+## 1. What Are the BDD Tools Used for Automation in Python?
+
+**Behavior-Driven Development (BDD)** is a software development methodology that promotes collaboration between developers, QA engineers, and business stakeholders.
+
+BDD tests are generally written using **Gherkin syntax**, which follows the `Given-When-Then` structure.
+
+### Python BDD Tools Ecosystem
+
+#### 1. `behave` — Recommended & Industry Standard
+
+* Python's implementation of the Cucumber Gherkin standard.
+* Supports feature files, scenario outlines, step parameters, environment hooks, and tagging.
+* Integrates with tools such as `requests`, `selenium`, and `allure-behave`.
+
+#### 2. `pytest-bdd`
+
+* A plugin that combines BDD-style specifications with the `pytest` test runner.
+* Supports native `pytest` fixtures, parameterization, and plugins.
+
+#### 3. `radish` / `lettuce`
+
+* Legacy Python BDD frameworks.
+* These frameworks are largely unmaintained.
+
+---
+
+## 2. Creating Step Definition Files with Auto-Generated Syntax and Annotations
+
+When `behave` encounters undefined steps in a `.feature` file, the test runner can generate step-definition code snippets in the terminal.
+
+### A. Example of Auto-Generated Step Definition
+
+
+You can implement step definitions for the new steps using these snippets:
+
+@when(u'I send a POST request to "{endpoint}" with title "{title}"')
+def step_impl(context, endpoint, title):
+    raise NotImplementedError(u'STEP: When I send a POST request to...')
+
+
+### B. Step Annotations
+
+#### `@given`
+
+Defines the initial or prerequisite state.
+
+**Example:** Setting the base URL or authentication token.
+
+#### `@when`
+
+Defines the action or event being tested.
+
+**Example:** Sending an HTTP API request.
+
+#### `@then`
+
+Defines the expected result or validation.
+
+**Example:** Checking the response status code.
+
+#### `@step`
+
+A generic decorator that can be used with any Gherkin step keyword.
+
+### C. Parameter Matchers
+
+#### 1. Standard Parse Matcher
+
+python
+@when('I send a GET request to "{endpoint}"')
+def step_get(context, endpoint):
+    context.response = requests.get(context.base_url + endpoint)
+
+
+#### 2. Regular Expression Matcher
+
+python
+from behave import step, use_step_matcher
+
+use_step_matcher("re")
+
+@step(r'the status code should be (?P<code me>\d+)')
+def step_status_regex(context, code):
+    assert context.response.status_code == int(code)
+
+
+---
+
+## 3. Implementing API Automation Logic in Step Definitions
+
+The actual API automation logic can be implemented using the `requests` library inside step functions.
+
+The `context` object is used to share data between different steps within a scenario.
+
+### Step Definition Implementation (`steps/api_steps.py`)
+
+python
+from behave import given, when, then
+import requests
+
+@given('the API base URL is "{base_url}"')
+def set_base_url(context, base_url):
+    context.base_url = base_url
+    context.session = requests.Session()
+
+@when('I create a user with name "{name}" and job "{job}"')
+def create_user(context, name, job):
+    payload = {"name": name, "job": job}
+    url = f"{context.base_url}/api/users"
+    context.response = context.session.post(url, json=payload)
+
+@then('the response status code should be {status_code:d}')
+def verify_status_code(context, status_code):
+    assert context.response.status_code == status_code, \
+        f"Expected {status_code}, got {context.response.status_code}"
+
+@then('the response body should contain key "{key_name}"')
+def verify_json_key(context, key_name):
+    json_data = context.response.json()
+    assert key_name in json_data, f"Key '{key_name}' missing in response!"
+
+
+---
+
+## 4. Implementing Hooks Using the `environment.py` File
+
+The `environment.py` file is placed inside the `features/` directory.
+
+It contains global lifecycle hooks that `behave` executes automatically at different stages of test execution.
+
+### Available Hook Functions
+
+* `before_all(context)` / `after_all(context)`
+
+  * Executed once before and after the complete test suite.
+
+* `before_feature(context, feature)` / `after_feature(context, feature)`
+
+  * Executed before and after each feature.
+
+* `before_scenario(context, scenario)` / `after_scenario(context, scenario)`
+
+  * Executed before and after each scenario.
+
+* `before_step(context, step)` / `after_step(context, step)`
+
+  * Executed before and after every step.
+
+* `before_tag(context, tag)` / `after_tag(context, tag)`
+
+  * Executed when a specific tag is encountered.
+
+### Sample `environment.py` Implementation
+
+python
+import requests
+import logging
+
+def before_all(context):
+    print("\n[HOOK] Initializing Global Test Environment...")
+
+    context.global_config = {
+        "base_url": "https://reqres.in",
+        "timeout": 10
+    }
+
+    logging.basicConfig(level=logging.INFO)
+
+def before_scenario(context, scenario):
+    print(f"\n[HOOK] Starting Scenario: '{scenario.name}'")
+
+    context.session = requests.Session()
+    context.session.headers.update({
+        "Accept": "application/json"
+    })
+
+def after_scenario(context, scenario):
+    print(
+        f"[HOOK] Cleaning up after Scenario: "
+        f"'{scenario.name}' (Status: {scenario.status})"
+    )
+
+    if hasattr(context, "session"):
+        context.session.close()
+
+def after_all(context):
+    print("\n[HOOK] All Scenarios completed. Tearing down environment.")
+
+
+---
+
+## 5. Parameterizing Test Scenarios Using Scenario Outline and Examples
+
+A `Scenario Outline` combined with an `Examples:` table allows **data-driven BDD testing**.
+
+The same scenario logic can be executed repeatedly using different rows of test data.
+
+### Gherkin Feature (`features/user_parameterization.feature`)
+
+gherkin
+Feature: Parameterized User Creation API Tests
+
+  Scenario Outline: Create user with multiple datasets
+    Given the API base URL is "https://reqres.in"
+    When I create a user with name "<User_Name>" and job "<Job_Title>"
+    Then the response status code should be <Expected_Status>
+    And the response body should contain key "id"
+
+    Examples: User Test Data Table
+      | User_Name | Job_Title           | Expected_Status |
+      | Alice     | Software Engineer   | 201             |
+      | Bob       | QA Automation Lead  | 201             |
+      | Charlie   | Product Manager     | 201             |
+
+
+### Key Point
+
+Each row in the `Examples` table represents a separate set of test data for the same scenario.
+
+---
+
+## 6. Using Tags to Run Selected Tests
+
+Tags in the form `@tag_name` can be used to categorize features and scenarios.
+
+This allows specific groups of tests to be selected during execution.
+
+### A. Tagging Gherkin Scenarios
+
+gherkin
+@api @smoke
+Feature: Core API Smoke Tests
+
+  @login @critical
+  Scenario: Valid user login
+    Given the login endpoint is ready
+    When I post valid credentials
+    Then status code is 200
+
+  @regression @wip
+  Scenario: Password reset workflow
+    Given the reset endpoint is ready
+    When I request password reset
+    Then confirmation email is dispatched
+
+
+### B. Running Tagged Tests from the Command Line
+
+
+# Run only @smoke scenarios
+behave --tags=@smoke
+
+# Run scenarios with BOTH @api AND @smoke
+behave --tags="@api and @smoke"
+
+# Run scenarios with @smoke OR @regression
+behave --tags="@smoke or @regression"
+
+# Skip work-in-progress (@wip) scenarios
+behave --tags="not @wip"
+
+
+---
+
+## 7. Best Practices for Writing Reusable Step Definitions
+
+When creating API BDD automation, step definitions should be designed for maximum reuse and maintainability.
+
+### Best Practices
+
+1. **Keep Steps Declarative**
+
+   * Focus on business behavior rather than low-level implementation details.
+
+2. **Use Parameter Types**
+
+   * Use appropriate parameter types in step matchers.
+   * Example: `{status_code:d}` for integers and `{endpoint:s}` for strings.
+
+3. **Avoid Tight Coupling**
+
+   * Use the `context` object to share dynamic state between steps.
+
+4. **Avoid Duplicate Step Matchers**
+
+   * Do not create duplicate step definitions across different step-definition files.
+
+5. **Separate API Logic**
+
+   * Move API client calls into reusable Helper or Service classes instead of keeping all implementation details inside step-definition files.
+
+---
+
+## 8. Combining Tagging and Hooks to Create Generalized BDD Code
+
+Tags can be combined with the `before_tag` hook in `environment.py` to perform dynamic setup based on the tag assigned to a scenario.
+
+### Example
+
+python
+def before_tag(context, tag):
+    if tag == "requires_auth":
+        print("[HOOK] Generating Auth Token for Scenario...")
+
+        # Get dynamic auth token
+        res = requests.post(
+            "https://reqres.in/api/login",
+            json={
+                "email": "eve.holt@reqres.in",
+                "password": "cityslicka"
+            }
+        )
+
+        token = res.json().get("token")
+
+        context.session.headers.update({
+            "Authorization": f"Bearer {token}"
+        })
+
+    elif tag == "database":
+        print("[HOOK] Opening Database Connection...")
+
+        # context.db_conn = create_db_conn()
+
+
+### Key Idea
+
+The hook checks the tag and performs the required setup automatically.
+
+For example:
+
+* `@requires_auth` → Generates and applies an authentication token.
+* `@database` → Can be used to initialize a database connection.
+
+---
+
+## 9. Generating Allure Reports for a Python API BDD Framework
+
+**Allure Report** is a test reporting tool that provides detailed test information, visualizations, and step-level reporting.
+
+### A. Installation
+
+
+pip install allure-behave
+
+
+### B. Attaching API Payloads and Status Codes to Allure
+
+python
+import allure
+
+@then('the response status code should be {status_code:d}')
+def verify_status_allure(context, status_code):
+
+    allure.attach(
+        body=str(context.response.status_code),
+        name="Actual HTTP Status Code",
+        attachment_type=allure.attachment_type.TEXT
+    )
+
+    allure.attach(
+        body=context.response.text,
+        name="Response Body JSON",
+        attachment_type=allure.attachment_type.JSON
+    )
+
+    assert context.response.status_code == status_code
+
+
+### C. Running Tests and Generating the Allure Report
+
+#### Step 1: Run Behave Tests and Generate Allure Results
+
+
+behave -f allure_behave.formatter:AllureFormatter -o reports/allure-results
+
+
+#### Step 2: Generate the Visual HTML Report
+
+
+allure generate reports/allure-results -o reports/allure-report --clean
+
+
+#### Step 3: Open the Report
+
+
+allure open reports/allure-report
+
+
+### Summary
+
+* **Behave** → Implements BDD-style API automation using Gherkin.
+* **Step Definitions** → Connect Gherkin steps with Python automation logic.
+* **Context** → Shares data between steps.
+* **Hooks** → Handle setup and cleanup activities.
+* **Scenario Outline** → Supports data-driven testing.
+* **Tags** → Allow selective test execution.
+* **Allure** → Provides detailed test execution reports.

@@ -1,0 +1,318 @@
+# PART 2: PYTHON HTTP LIBRARIES
+
+---
+
+## 1. UNDERSTANDING GET HTTP REQUESTS AND JSON RESPONSE HANDLING
+
+HTTP **GET** requests are used to retrieve data from a specific resource on a server.
+
+In REST APIs, GET requests are generally **read-only, safe, and idempotent**. Repeating the same GET request does not change the state of the server.
+
+### A. Making a GET Request in Python
+
+The `requests` library can be used to send a GET request:
+
+
+import requests
+
+url = "https://jsonplaceholder.typicode.com/users/1"
+response = requests.get(url)
+
+
+### B. Processing the Response Using `.json()`
+
+The `.json()` method provided by `requests` converts a JSON response into native Python objects such as **dictionaries and lists**.
+
+
+if response.status_code == 200:
+    data = response.json()  # Converts JSON response into a Python dictionary
+
+    # Accessing top-level and nested properties
+    user_name = data.get("name")
+    user_email = data.get("email")
+    company_name = data.get("company", {}).get("name")
+
+    print(f"Name: {user_name}, Email: {user_email}, Company: {company_name}")
+
+
+### C. Handling Query Parameters
+
+Query parameters can be passed as a dictionary through the `params` argument of `requests.get()`.
+
+
+query_params = {"postId": 1}
+
+res = requests.get(
+    "https://jsonplaceholder.typicode.com/comments",
+    params=query_params
+)
+
+# Generates:
+# https://jsonplaceholder.typicode.com/comments?postId=1
+
+
+---
+
+## 2. BASIC FEATURES OF THE REQUESTS LIBRARY
+
+The Python `requests` library provides several useful features out of the box:
+
+1. **Keep-Alive and Connection Pooling**
+   Reuses TCP connections between requests to improve efficiency.
+
+2. **Custom Headers and User-Agent**
+   Allows custom HTTP headers and User-Agent values to be specified.
+
+3. **Automatic Decompression**
+   Supports automatic decompression of formats such as Gzip, Deflate, and Brotli.
+
+4. **Automatic Unicode Decoding**
+   Decodes Unicode content based on the HTTP response headers.
+
+5. **Timeout Management**
+   Supports connection and read timeouts.
+
+6. **SSL Certificate Verification**
+   SSL verification can be controlled using `verify=True` or `verify=False`.
+
+7. **Streamed Downloads**
+   Large response bodies can be downloaded using `stream=True`.
+
+8. **Cookies and Session Management**
+   Cookies and persistent session information can be managed using `requests.Session()`.
+
+---
+
+## 3. INSTALLATION AND QUICK START
+
+### A. Installation
+
+Install the `requests` library using:
+
+text
+pip install requests
+
+
+### B. Quick Start Template
+
+The following example demonstrates basic GET, POST, PUT, and DELETE requests:
+
+
+import requests
+
+# 1. GET Request
+get_res = requests.get("https://httpbin.org/get")
+print("GET Status:", get_res.status_code)
+
+# 2. POST Request
+post_res = requests.post(
+    "https://httpbin.org/post",
+    json={"key": "value"}
+)
+print("POST Status:", post_res.status_code)
+
+# 3. PUT Request
+put_res = requests.put(
+    "https://httpbin.org/put",
+    json={"key": "updated_value"}
+)
+print("PUT Status:", put_res.status_code)
+
+# 4. DELETE Request
+del_res = requests.delete("https://httpbin.org/delete")
+print("DELETE Status:", del_res.status_code)
+
+
+---
+
+## 4. VALIDATING RESPONSE STATUS CODES AND HEADERS USING THE RESPONSE OBJECT
+
+In API automation, it is important to validate both the **HTTP status code** and the **response headers**.
+
+### A. Validating Status Codes
+
+
+response = requests.get("https://httpbin.org/status/200")
+
+# 1. Direct equality assertion
+assert response.status_code == 200, \
+    f"Expected 200, got {response.status_code}"
+
+# 2. Using response.ok
+# True when the status code is less than 400
+assert response.ok, "Response indicated HTTP failure!"
+
+# 3. Using raise_for_status()
+# Raises HTTPError for 4xx and 5xx responses
+response.raise_for_status()
+
+
+### B. Validating Response Headers
+
+The `response.headers` attribute provides access to the response headers through a **case-insensitive dictionary (`CaseInsensitiveDict`)**.
+
+
+response = requests.get("https://httpbin.org/headers")
+
+headers = response.headers
+
+# Case-insensitive lookup
+content_type = headers.get("content-type")
+server_name = headers.get("server")
+
+# Assertions on headers
+assert "application/json" in content_type, \
+    "Expected JSON response!"
+
+assert "Date" in headers, \
+    "Date header missing in response!"
+
+
+---
+
+## 5. AUTOMATING POST HTTP REQUESTS WITH PAYLOAD AND HEADERS
+
+HTTP **POST** requests are commonly used to submit data to a server and create a new resource.
+
+### A. Sending a JSON Payload
+
+When `json=payload` is used, the Python dictionary is serialized as JSON and the `Content-Type` header is set to `application/json`.
+
+
+import requests
+
+url = "https://jsonplaceholder.typicode.com/posts"
+
+custom_headers = {
+    "Authorization": "Bearer sample_token_12345",
+    "Accept": "application/json",
+    "User-Agent": "AutomationTestClient/1.0"
+}
+
+post_payload = {
+    "title": "API Automation Testing",
+    "body": "Learning Python Requests HTTP Library",
+    "userId": 10
+}
+
+response = requests.post(
+    url,
+    json=post_payload,
+    headers=custom_headers
+)
+
+assert response.status_code == 201, \
+    f"Expected 201 Created, got {response.status_code}"
+
+created_data = response.json()
+
+assert created_data["title"] == post_payload["title"]
+
+print("Created Resource ID:", created_data["id"])
+
+
+### B. Sending a Form-Encoded Payload
+
+When `data=payload` is used, the request is sent as form-encoded data with the content type:
+
+`application/x-www-form-urlencoded`
+
+
+form_payload = {
+    "username": "admin",
+    "password": "password123"
+}
+
+res = requests.post(
+    "https://httpbin.org/post",
+    data=form_payload
+)
+
+
+---
+
+## 6. END-TO-END API AUTOMATION FLOW USING PYTHON
+
+A complete end-to-end API automation test can perform **CRUD operations** — Create, Read, Update, and Delete — on a resource.
+
+The test should validate the response and expected state at each step.
+
+### Complete E2E Automation Script
+
+
+import requests
+import unittest
+
+
+class TestUserAPIEndToEnd(unittest.TestCase):
+
+    BASE_URL = "https://reqres.in/api/users"
+
+    def test_e2e_user_crud_flow(self):
+
+        # Step 1: CREATE User (POST)
+        payload = {
+            "name": "Diptarka Samanta",
+            "job": "QA Automation Lead"
+        }
+
+        create_res = requests.post(
+            self.BASE_URL,
+            json=payload
+        )
+
+        self.assertEqual(create_res.status_code, 201)
+
+        user_id = create_res.json().get("id")
+        self.assertIsNotNone(user_id)
+
+        # Step 2: READ User Details (GET)
+        get_res = requests.get(
+            f"{self.BASE_URL}/2"
+        )
+
+        # Using static sample ID for reqres
+        self.assertEqual(get_res.status_code, 200)
+
+        # Step 3: UPDATE User Details (PUT)
+        update_payload = {
+            "name": "Diptarka Samanta",
+            "job": "Senior SDET"
+        }
+
+        put_res = requests.put(
+            f"{self.BASE_URL}/2",
+            json=update_payload
+        )
+
+        self.assertEqual(put_res.status_code, 200)
+        self.assertEqual(
+            put_res.json()["job"],
+            "Senior SDET"
+        )
+
+        # Step 4: DELETE User (DELETE)
+        del_res = requests.delete(
+            f"{self.BASE_URL}/2"
+        )
+
+        self.assertEqual(
+            del_res.status_code,
+            204
+        )  # 204 No Content
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+### CRUD Flow Summary
+
+| Step | HTTP Method | Operation   | Validation                         |
+| ---- | ----------- | ----------- | ---------------------------------- |
+| 1    | `POST`      | Create User | Status `201`, ID exists            |
+| 2    | `GET`       | Read User   | Status `200`                       |
+| 3    | `PUT`       | Update User | Status `200`, updated job verified |
+| 4    | `DELETE`    | Delete User | Status `204`                       |
+
+This flow demonstrates how Python's `requests` library can be used to automate a complete API workflow while validating responses at each stage.
